@@ -97,7 +97,6 @@ const Home = ({ user, logout }) => {
     (data) => {
       // if sender isn't null, that means the message needs to be put in a brand new convo
       const { message, sender = null } = data;
-      console.log(message);
       if (sender !== null) {
         const newConvo = {
           id: message.conversationId,
@@ -116,8 +115,6 @@ const Home = ({ user, logout }) => {
           convo.latestMessageText = message.text;
         }
       });
-
-      console.log('new convo: ', newConvo);
 
       setConversations(newConvo);
     },
