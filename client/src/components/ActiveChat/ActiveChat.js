@@ -27,11 +27,15 @@ const ActiveChat = ({
 }) => {
   const classes = useStyles();
 
+  console.log('in Active Chat!');
+
   const conversation = conversations
     ? conversations.find(
         (conversation) => conversation.otherUser.username === activeConversation
       )
     : {};
+
+  console.log(conversation);
 
   const isConversation = (obj) => {
     return obj !== {} && obj !== undefined;

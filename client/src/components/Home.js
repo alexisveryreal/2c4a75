@@ -21,6 +21,7 @@ const Home = ({ user, logout }) => {
 
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
+  const [readMessages, setReadMessages] = useState(null);
 
   const classes = useStyles();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -121,6 +122,25 @@ const Home = ({ user, logout }) => {
     [setConversations, conversations]
   );
 
+  const setReadMessage = useCallback(
+    (data) => {
+      console.log('in setReadMessage', data);
+      const newConvo = [...conversations];
+      newConvo.forEach((convo) => {
+        if (convo.id === data.message.conversationId) {
+          const messageIndex = convo.messages.findIndex(
+            (message) => message.id === data.message.id
+          );
+          if (messageIndex !== -1) {
+            convo.messages[messageIndex].seen = true;
+          }
+        }
+      });
+      setConversations(newConvo);
+    },
+    [conversations]
+  );
+
   const setActiveChat = (username) => {
     setActiveConversation(username);
   };
@@ -160,6 +180,7 @@ const Home = ({ user, logout }) => {
     socket.on('add-online-user', addOnlineUser);
     socket.on('remove-offline-user', removeOfflineUser);
     socket.on('new-message', addMessageToConversation);
+    socket.on('read-message', setReadMessage);
 
     return () => {
       // before the component is destroyed
@@ -167,8 +188,15 @@ const Home = ({ user, logout }) => {
       socket.off('add-online-user', addOnlineUser);
       socket.off('remove-offline-user', removeOfflineUser);
       socket.off('new-message', addMessageToConversation);
+      socket.off('read-message', setReadMessage);
     };
-  }, [addMessageToConversation, addOnlineUser, removeOfflineUser, socket]);
+  }, [
+    setReadMessage,
+    addMessageToConversation,
+    addOnlineUser,
+    removeOfflineUser,
+    socket,
+  ]);
 
   useEffect(() => {
     // when fetching, prevent redirect
