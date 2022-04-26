@@ -8,15 +8,25 @@ import axios from 'axios';
 const Messages = (props) => {
   const { messages, otherUser, userId, messagesLength, filteredSeen } = props;
 
+  console.log(filteredSeen);
+
   const socket = useContext(SocketContext);
 
   /**
    * Function that takes in a Message
    * then updates that message to seen in the backend
    * @param {T} body
+   * @param {boolean} updateAll
    * @returns {Promise<T>}
    */
-  const updateMessage = useCallback(async (body) => {
+  const updateMessage = useCallback(async (body, updateAll) => {
+    if (updateAll) {
+      const newBody = { ...body };
+      newBody.updateAll = true;
+      const { data } = await axios.put('/api/messages', newBody);
+      console.log('data????: ', data);
+      return data;
+    }
     const { data } = await axios.put('/api/messages', body);
     return data;
   }, []);
@@ -33,10 +43,11 @@ const Messages = (props) => {
 
     const arrLength = otherUserMessages.length;
     if (arrLength > 0) {
+      const check = otherUserMessages[0].seen;
       const message = otherUserMessages[arrLength - 1];
       message.seen = true;
 
-      updateMessage(message)
+      updateMessage(message, !check)
         .then((data) => {
           socket.emit('read-message', {
             message: data,

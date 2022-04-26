@@ -56,17 +56,31 @@ router.put("/", async (req, res, next) => {
     }
 
     // Simple update, doesn't update all fields just 'seen' field for now
-    const { seen, id } = req.body;
+    const { seen, id, updateAll } = req.body;
 
-    const [rowsUpdate, [message]] = await Message.update(
-      { seen: seen },
-      {
-        returning: true,
-        where: { id: id },
-      }
-    );
-    // returns the saved message just in case we need it in the future
-    res.json(message);
+    console.log("Update All?: ", updateAll);
+
+    if (updateAll) {
+      const result = await Message.update(
+        { seen: seen },
+        {
+          where: {
+            seen: false,
+          },
+        }
+      );
+      res.json(result);
+    } else {
+      const [rowsUpdate, [message]] = await Message.update(
+        { seen: seen },
+        {
+          returning: true,
+          where: { id: id },
+        }
+      );
+      // returns the saved message just in case we need it in the future
+      res.json(message);
+    }
   } catch (error) {
     next(error);
   }
