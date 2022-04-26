@@ -56,9 +56,8 @@ router.put("/", async (req, res, next) => {
     }
 
     // Simple update, doesn't update all fields just 'seen' field for now
-    const { seen, id, updateAll } = req.body;
-
-    console.log("Update All?: ", updateAll);
+    // If updateAll is present means there was messages before the one sent that need to be marked
+    const { seen, id, updateAll, senderId } = req.body;
 
     if (updateAll) {
       const result = await Message.update(
@@ -66,6 +65,7 @@ router.put("/", async (req, res, next) => {
         {
           where: {
             seen: false,
+            senderId: senderId,
           },
         }
       );

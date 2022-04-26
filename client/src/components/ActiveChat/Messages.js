@@ -31,6 +31,20 @@ const Messages = (props) => {
     return data;
   }, []);
 
+  /**
+   * Function that checks the filtred function to see if any were not seen
+   * if we found any were seen === false, we return true.
+   * false otherwise
+   */
+  const checkForAnySeen = useCallback((arr) => {
+    const messagesNotSeen = arr.find((message) => message.seen === false);
+
+    if (messagesNotSeen) {
+      return true;
+    }
+    return false;
+  }, []);
+
   useEffect(() => {
     const otherUserMessages = messages.filter(
       (message) => message.senderId === otherUser.id
@@ -43,11 +57,11 @@ const Messages = (props) => {
 
     const arrLength = otherUserMessages.length;
     if (arrLength > 0) {
-      const check = otherUserMessages[0].seen;
+      const check = checkForAnySeen(otherUserMessages);
       const message = otherUserMessages[arrLength - 1];
       message.seen = true;
 
-      updateMessage(message, !check)
+      updateMessage(message, check)
         .then((data) => {
           socket.emit('read-message', {
             message: data,
@@ -57,7 +71,15 @@ const Messages = (props) => {
         })
         .catch(console.error);
     }
-  }, [messages, otherUser, socket, userId, updateMessage, messagesLength]);
+  }, [
+    messages,
+    otherUser,
+    socket,
+    userId,
+    updateMessage,
+    messagesLength,
+    checkForAnySeen,
+  ]);
 
   /**
    * Function that grabs the passed in message
