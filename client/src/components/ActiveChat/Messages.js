@@ -8,8 +8,6 @@ import axios from 'axios';
 const Messages = (props) => {
   const { messages, otherUser, userId, messagesLength, filteredSeen } = props;
 
-  console.log(filteredSeen);
-
   const socket = useContext(SocketContext);
 
   /**
@@ -24,7 +22,7 @@ const Messages = (props) => {
       const newBody = { ...body };
       newBody.updateAll = true;
       const { data } = await axios.put('/api/messages', newBody);
-      console.log('data????: ', data);
+
       return data;
     }
     const { data } = await axios.put('/api/messages', body);

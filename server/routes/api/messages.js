@@ -60,16 +60,18 @@ router.put("/", async (req, res, next) => {
     const { seen, id, updateAll, senderId } = req.body;
 
     if (updateAll) {
-      const result = await Message.update(
+      const [rowsUpdate, [message]] = await Message.update(
         { seen: seen },
         {
+          returning: true,
           where: {
             seen: false,
             senderId: senderId,
           },
         }
       );
-      res.json(result);
+      // returns the saved message to emit through socket
+      res.json(message?.dataValues ?? req.body);
     } else {
       const [rowsUpdate, [message]] = await Message.update(
         { seen: seen },
@@ -78,7 +80,7 @@ router.put("/", async (req, res, next) => {
           where: { id: id },
         }
       );
-      // returns the saved message just in case we need it in the future
+      // returns the saved message to emit through socket
       res.json(message);
     }
   } catch (error) {

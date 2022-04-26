@@ -39,8 +39,6 @@ const useStyles = makeStyles((theme) => ({
 const ChatContent = ({ conversation, hasSeenUnread }) => {
   const classes = useStyles();
 
-  console.log(conversation);
-
   const { otherUser } = conversation;
   const filterUnread = conversation.messages.filter(
     (message) => message.seen === false && message.senderId === otherUser.id
