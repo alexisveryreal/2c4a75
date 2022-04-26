@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect } from 'react';
 import { Box } from '@material-ui/core';
 import { SenderBubble, OtherUserBubble } from '.';
 import moment from 'moment';
@@ -6,46 +6,38 @@ import { SocketContext } from '../../context/socket';
 import axios from 'axios';
 
 const Messages = (props) => {
-  const { messages, otherUser, userId } = props;
-
-  // const [recentMessage, setRecentMessage] = useState(null);
-  // const [showSeen, setShowSeen] = useState(false);
+  const { messages, otherUser, userId, messagesLength, filteredSeen } = props;
 
   const socket = useContext(SocketContext);
 
-  // we know they clicked on the messages of the otherUser
-  // we can then emit that they have opened this and send they have read it
-  console.log('in messages');
-
-  console.log(messages);
-  console.log(otherUser);
-
+  /**
+   * Function that takes in a Message
+   * then updates that message to seen in the backend
+   * @param {T} body
+   * @returns {Promise<T>}
+   */
   const updateMessage = useCallback(async (body) => {
     const { data } = await axios.put('/api/messages', body);
     return data;
   }, []);
 
   useEffect(() => {
-    const bruhMoment = messages.filter(
+    const otherUserMessages = messages.filter(
       (message) => message.senderId === otherUser.id
     );
 
-    console.log('BRUH MOMENT: ', bruhMoment);
+    // Grabbing the messages from the other user
+    // grabbing their latest message, setting it to seen
+    // then updating that message in our DB
+    // aftewards then emits that message in case both users are on the page at the same time
 
-    const arrLength = bruhMoment.length;
+    const arrLength = otherUserMessages.length;
     if (arrLength > 0) {
-      const message = bruhMoment[arrLength - 1];
+      const message = otherUserMessages[arrLength - 1];
       message.seen = true;
 
       updateMessage(message)
         .then((data) => {
-          console.log(data);
-          console.log('Emitting read-message!!!!!', {
-            message: data,
-            reader: userId,
-            sender: otherUser.id,
-          });
-
           socket.emit('read-message', {
             message: data,
             reader: userId,
@@ -54,12 +46,36 @@ const Messages = (props) => {
         })
         .catch(console.error);
     }
-  }, [messages, otherUser, socket, userId, updateMessage]);
+  }, [messages, otherUser, socket, userId, updateMessage, messagesLength]);
+
+  /**
+   * Function that grabs the passed in message
+   * Checks if that message is the same as the last seen message
+   * If it is then we return true otherwise false
+   * returning true will show the avatar bubble under that message
+   * @param {T} message
+   * @param {boolean} seen
+   * @returns {boolean}
+   */
+  const setSeen = (message, seen = false) => {
+    if (filteredSeen.length > 0) {
+      const mostRecentMessage = filteredSeen[filteredSeen.length - 1];
+      const thisMessage = mostRecentMessage.id === message.id;
+      if (thisMessage) {
+        seen = true;
+      }
+    }
+    return seen;
+  };
 
   return (
     <Box>
       {messages.map((message) => {
         const time = moment(message.createdAt).format('h:mm');
+
+        // variable to indicate if avatar bubble of other user shows under this message
+        // see logic above
+        let seen = setSeen(message);
 
         return message.senderId === userId ? (
           <SenderBubble
@@ -67,7 +83,7 @@ const Messages = (props) => {
             text={message.text}
             time={time}
             otherUser={otherUser}
-            showSeen={message.seen}
+            showSeen={seen}
           />
         ) : (
           <OtherUserBubble

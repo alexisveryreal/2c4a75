@@ -27,15 +27,23 @@ const ActiveChat = ({
 }) => {
   const classes = useStyles();
 
-  console.log('in Active Chat!');
-
   const conversation = conversations
     ? conversations.find(
         (conversation) => conversation.otherUser.username === activeConversation
       )
     : {};
 
-  console.log(conversation);
+  /**
+   * Function that filters the messages to those that were seen
+   * and that were sent by the current user
+   * The array could be empty
+   * @returns {T[]}
+   */
+  const filterSeen = () => {
+    return conversation.messages.filter(
+      (message) => message.seen === true && message.senderId === user.id
+    );
+  };
 
   const isConversation = (obj) => {
     return obj !== {} && obj !== undefined;
@@ -54,8 +62,10 @@ const ActiveChat = ({
               <>
                 <Messages
                   messages={conversation.messages}
+                  messagesLength={conversation.messages.length}
                   otherUser={conversation.otherUser}
                   userId={user.id}
+                  filteredSeen={filterSeen()}
                 />
                 <Input
                   otherUser={conversation.otherUser}

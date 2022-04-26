@@ -51,12 +51,11 @@ router.post("/", async (req, res, next) => {
 
 router.put("/", async (req, res, next) => {
   try {
-    console.log(req.user);
     if (!req.user) {
       return res.sendStatus(401);
     }
-    const someUserId = req.user.id;
 
+    // Simple update, doesn't update all fields just 'seen' field for now
     const { seen, id } = req.body;
 
     const [rowsUpdate, [message]] = await Message.update(
@@ -66,9 +65,7 @@ router.put("/", async (req, res, next) => {
         where: { id: id },
       }
     );
-
-    console.log("Message should have been seen!: ", message.seen);
-
+    // returns the saved message just in case we need it in the future
     res.json(message);
   } catch (error) {
     next(error);

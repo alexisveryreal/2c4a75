@@ -25,26 +25,30 @@ const useStyles = makeStyles(() => ({
     background: '#F4F6FA',
     borderRadius: '10px 10px 0 10px',
   },
+  avatar: {
+    height: 20,
+    width: 20,
+    marginTop: 10,
+  },
 }));
 
 const SenderBubble = ({ time, text, otherUser, showSeen }) => {
   const classes = useStyles();
-
-  console.log(text);
 
   return (
     <Box className={classes.root}>
       <Typography className={classes.date}>{time}</Typography>
       <Box className={classes.bubble}>
         <Typography className={classes.text}>{text}</Typography>
-        {showSeen && (
-          <Avatar
-            alt={otherUser.username}
-            src={otherUser.photoUrl}
-            className={classes.avatar}
-          />
-        )}
       </Box>
+      {/* If this is the lastest seen message show an avatar bubble */}
+      {showSeen && (
+        <Avatar
+          alt={otherUser.username}
+          src={otherUser.photoUrl}
+          className={classes.avatar}
+        />
+      )}
     </Box>
   );
 };

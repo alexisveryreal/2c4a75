@@ -21,7 +21,6 @@ const Home = ({ user, logout }) => {
 
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
-  const [readMessages, setReadMessages] = useState(null);
 
   const classes = useStyles();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -122,9 +121,13 @@ const Home = ({ user, logout }) => {
     [setConversations, conversations]
   );
 
+  /**
+   * Function that gets calls on socket read-message
+   * * copies the conversations and sets the message to seen
+   * * then sets the conversations to this new one with that messaged marked as seen
+   */
   const setReadMessage = useCallback(
     (data) => {
-      console.log('in setReadMessage', data);
       const newConvo = [...conversations];
       newConvo.forEach((convo) => {
         if (convo.id === data.message.conversationId) {
