@@ -67,8 +67,12 @@ router.get("/", async (req, res, next) => {
         convoJSON.otherUser.online = false;
       }
 
+      // so the sidebar is correct but the messages in the chat are in the right order
+      convoJSON.messages = convoJSON.messages.reverse();
+
+      const length = convoJSON.messages.length;
       // set properties for notification count and latest message preview
-      convoJSON.latestMessageText = convoJSON.messages[0].text;
+      convoJSON.latestMessageText = convoJSON.messages[length - 1].text;
       conversations[i] = convoJSON;
     }
 
