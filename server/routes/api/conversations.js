@@ -19,7 +19,7 @@ router.get("/", async (req, res, next) => {
         },
       },
       attributes: ["id"],
-      order: [[Message, "createdAt", "ASC"]],
+      order: [[Message, "createdAt", "DESC"]],
       include: [
         { model: Message, order: ["createdAt", "DESC"] },
         {
@@ -66,6 +66,9 @@ router.get("/", async (req, res, next) => {
       } else {
         convoJSON.otherUser.online = false;
       }
+
+      // so the sidebar is correct but the messages in the chat are in the right order
+      convoJSON.messages = convoJSON.messages.reverse();
 
       const length = convoJSON.messages.length;
       // set properties for notification count and latest message preview
