@@ -55,36 +55,61 @@ router.put("/", async (req, res, next) => {
       return res.sendStatus(401);
     }
 
-    // Simple update, doesn't update all fields just 'seen' field for now
-    // If updateAll is present means there was messages before the one sent that need to be marked
-    const { seen, id, updateAll, senderId } = req.body;
+    const { seen, senderId, recipientId } = req.body;
 
-    if (updateAll) {
-      const [rowsUpdate, [message]] = await Message.update(
-        { seen: seen },
-        {
-          returning: true,
-          where: {
-            seen: false,
-            senderId: senderId,
-          },
-        }
-      );
-      // returns the saved message to emit through socket
-      res.json(message?.dataValues ?? req.body);
-    } else {
-      const [rowsUpdate, [message]] = await Message.update(
-        { seen: seen },
-        {
-          returning: true,
-          where: { id: id },
-        }
-      );
-      // returns the saved message to emit through socket
-      res.json(message);
+    const findConvo = await Conversation.findConversation(
+      senderId,
+      recipientId
+    );
+
+    const unAuthorizedCheck =
+      req.user.dataValues.id !== recipientId &&
+      req.user.dataValues.id !== senderId;
+
+    // If we can't find a conversation with these users
+    // or if for some reason the logged in user is not the recipient or the sender
+    // then we send an unauthorized response
+    if (findConvo === null || unAuthorizedCheck) {
+      return res.sendStatus(401);
     }
+
+    // Updates all messages from the senderId to seen
+    const [rowsUpdate, message] = await Message.update(
+      { seen: seen },
+      {
+        returning: true,
+        where: {
+          seen: false,
+          senderId: senderId,
+        },
+      }
+    );
+    // returns last updated message
+    res.json(message[message.length - 1].dataValues);
   } catch (error) {
     next(error);
+  }
+});
+
+// Gets all messages in a certain conversation from a user, and seen or not.
+// returns the data itself and the count of said data.
+router.get("/:conversationId/:userId/:seen", async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.sendStatus(401);
+    }
+
+    const { conversationId, seen, userId } = req.params;
+    const messages = await Message.findAndCountAll({
+      where: {
+        seen: seen,
+        conversationId: conversationId,
+        senderId: userId,
+      },
+    });
+    res.json(messages);
+  } catch (error) {
+    console.error(error);
   }
 });
 

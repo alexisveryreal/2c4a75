@@ -6,7 +6,15 @@ import { SocketContext } from '../../context/socket';
 import axios from 'axios';
 
 const Messages = (props) => {
-  const { messages, otherUser, userId, messagesLength, filteredSeen } = props;
+  const {
+    messages,
+    otherUser,
+    userId,
+    messagesLength,
+    filteredSeen,
+    setReadMessage,
+    conversationId,
+  } = props;
 
   const socket = useContext(SocketContext);
 
@@ -14,69 +22,58 @@ const Messages = (props) => {
    * Function that takes in a Message
    * then updates that message to seen in the backend
    * @param {T} body
-   * @param {boolean} updateAll
    * @returns {Promise<T>}
    */
-  const updateMessage = useCallback(async (body, updateAll) => {
-    if (updateAll) {
-      const newBody = { ...body };
-      newBody.updateAll = true;
-      const { data } = await axios.put('/api/messages', newBody);
-
-      return data;
-    }
+  const updateMessage = useCallback(async (body) => {
     const { data } = await axios.put('/api/messages', body);
     return data;
   }, []);
 
-  /**
-   * Function that checks the filtred function to see if any were not seen
-   * if we found any were seen === false, we return true.
-   * false otherwise
-   */
-  const checkForAnySeen = useCallback((arr) => {
-    const messagesNotSeen = arr.find((message) => message.seen === false);
-
-    if (messagesNotSeen) {
-      return true;
-    }
-    return false;
-  }, []);
-
   useEffect(() => {
-    const otherUserMessages = messages.filter(
-      (message) => message.senderId === otherUser.id
-    );
+    const fetchUnseenOther = async () => {
+      try {
+        const { data } = await axios.get(
+          `/api/messages/${conversationId}/${otherUser.id}/${false}`
+        );
+        const otherUserMessages = data.rows;
+        // Grabbing the messages from the other user
+        // grabbing their latest message, setting it to seen
+        // then updating that message in our DB
+        // aftewards then emits that message in case both users are on the page at the same time
 
-    // Grabbing the messages from the other user
-    // grabbing their latest message, setting it to seen
-    // then updating that message in our DB
-    // aftewards then emits that message in case both users are on the page at the same time
+        const arrLength = otherUserMessages.length;
+        if (arrLength > 0) {
+          const message = otherUserMessages[arrLength - 1];
+          message.seen = true;
+          message.recipientId = userId;
 
-    const arrLength = otherUserMessages.length;
-    if (arrLength > 0) {
-      const check = checkForAnySeen(otherUserMessages);
-      const message = otherUserMessages[arrLength - 1];
-      message.seen = true;
+          const data = await updateMessage(message);
 
-      updateMessage(message, check)
-        .then((data) => {
+          // neccessary for this current user, the socket emit handles the other user
+          setReadMessage({
+            message: data,
+            reader: userId,
+            sender: otherUser.id,
+          });
           socket.emit('read-message', {
             message: data,
             reader: userId,
             sender: otherUser.id,
           });
-        })
-        .catch(console.error);
-    }
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchUnseenOther();
   }, [
-    messages,
-    otherUser,
+    conversationId,
+    otherUser.id,
+    setReadMessage,
     socket,
-    userId,
     updateMessage,
+    userId,
     messagesLength,
-    checkForAnySeen,
   ]);
 
   /**
@@ -85,10 +82,10 @@ const Messages = (props) => {
    * If it is then we return true otherwise false
    * returning true will show the avatar bubble under that message
    * @param {T} message
-   * @param {boolean} seen
    * @returns {boolean}
    */
-  const setSeen = (message, seen = false) => {
+  const setSeen = (message) => {
+    let seen = false;
     if (filteredSeen.length > 0) {
       const mostRecentMessage = filteredSeen[filteredSeen.length - 1];
       const thisMessage = mostRecentMessage.id === message.id;
@@ -106,6 +103,7 @@ const Messages = (props) => {
 
         // variable to indicate if avatar bubble of other user shows under this message
         // see logic above
+
         let seen = setSeen(message);
 
         return message.senderId === userId ? (
