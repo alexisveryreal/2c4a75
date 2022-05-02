@@ -127,6 +127,37 @@ const Home = ({ user, logout }) => {
     [setConversations]
   );
 
+  /**
+   * Function that gets calls on socket read-message
+   * * copies the conversations and sets the message to seen
+   * * then sets the conversations to this new one with that message(s) marked as seen
+   */
+  const setReadMessage = useCallback((data) => {
+    setConversations((prev) =>
+      prev.map((convo) => {
+        if (convo.id === data.message.conversationId) {
+          const newConvo = { ...convo, messages: [...convo.messages] };
+
+          // find index of first message where seen is false
+          let mIndex = newConvo.messages.findIndex(
+            (message) => message.seen === false
+          );
+
+          // loop through the remaining messages in case there was multiple not seen
+          if (mIndex !== -1) {
+            for (let i = mIndex; i < newConvo.messages.length; i++) {
+              newConvo.messages[i].seen = true;
+            }
+          }
+
+          return newConvo;
+        } else {
+          return convo;
+        }
+      })
+    );
+  }, []);
+
   const setActiveChat = (username) => {
     setActiveConversation(username);
   };
@@ -166,6 +197,7 @@ const Home = ({ user, logout }) => {
     socket.on('add-online-user', addOnlineUser);
     socket.on('remove-offline-user', removeOfflineUser);
     socket.on('new-message', addMessageToConversation);
+    socket.on('read-message', setReadMessage);
 
     return () => {
       // before the component is destroyed
@@ -173,8 +205,15 @@ const Home = ({ user, logout }) => {
       socket.off('add-online-user', addOnlineUser);
       socket.off('remove-offline-user', removeOfflineUser);
       socket.off('new-message', addMessageToConversation);
+      socket.off('read-message', setReadMessage);
     };
-  }, [addMessageToConversation, addOnlineUser, removeOfflineUser, socket]);
+  }, [
+    setReadMessage,
+    addMessageToConversation,
+    addOnlineUser,
+    removeOfflineUser,
+    socket,
+  ]);
 
   useEffect(() => {
     // when fetching, prevent redirect
@@ -226,6 +265,7 @@ const Home = ({ user, logout }) => {
           conversations={conversations}
           user={user}
           postMessage={postMessage}
+          setReadMessage={setReadMessage}
         />
       </Grid>
     </>
